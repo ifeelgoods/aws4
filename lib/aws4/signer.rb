@@ -16,15 +16,24 @@ module AWS4
       @region = config[:region] || config["region"]
     end
 
-    def sign(method, uri, headers, body, debug = false)
+    ## Sign the headers of a request
+    # @param [String] Method Method used for the request (GET, POST, etc)
+    # @param [String] Service AWS Service to call
+    # @param [Uri] URI URI containing the URL for the request
+    # @param [String] Date Datetime with a specific format ("%Y%m%dT%H%M%SZ")
+    # @param [Hash] Headers Default headers to sign
+    # @param [String] Body Body to send inside the request
+    # @param [Boolean] Debug True if debug mode is activated
+    # @return the signed headers
+    def sign(method, uri, headers, body, debug = false, service_name=nil)
       @method = method.upcase
       @uri = uri
       @headers = headers
       @body = body
-      @service = @uri.host.split(".", 2)[0]
+      @service = service_name || @uri.host.split(".", 2)[0]
       date_header = headers["Date"] || headers["DATE"] || headers["date"]
       @date = (date_header ? Time.parse(date_header) : Time.now).utc.strftime(RFC8601BASIC)
-      dump if debug
+      debug_logs if debug
       signed = headers.dup
       signed['Authorization'] = authorization(headers)
       signed
@@ -77,10 +86,17 @@ module AWS4
       ].join("\n")
     end
 
+    # Hexdigest simply produces an ascii safe way
+    # to view the bytes produced from the hash algorithm.
+    # It takes the hex representation of each byte
+    # and concatenates them together to produce a string
     def hexdigest(value)
       Digest::SHA256.new.update(value).hexdigest
     end
 
+    # Hash-based message authentication code (HMAC)
+    # is a mechanism for calculating a message authentication code
+    # involving a hash function in combination with a secret key
     def hmac(key, value)
       OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new('sha256'), key, value)
     end
@@ -89,12 +105,13 @@ module AWS4
       OpenSSL::HMAC.hexdigest(OpenSSL::Digest::Digest.new('sha256'), key, value)
     end
 
-    def dump
-      puts "string to sign"
+    def debug_logs
+      puts "\n ######  String to sign: \n"
       puts string_to_sign
-      puts "canonical_request"
+      puts "\n ######  Canonical_request: \n"
       puts canonical_request
-      puts "authorization"
+      puts "\n ######  Body: \n"
+      puts body
     end
   end
 end
