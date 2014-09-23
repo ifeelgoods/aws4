@@ -22,6 +22,11 @@ It is designed to be library agnostic.
     # sign headers
     headers = signer.sign("POST", uri, headers, body)
 
+    # build request for AGCOD service
+    . . .
+    # sign headers
+    headers = signer.sign("POST", uri, headers, body, false, 'AGCODService')
+
 ## License
 
 The MIT License (MIT)
